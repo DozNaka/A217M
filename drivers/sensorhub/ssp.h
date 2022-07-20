@@ -124,7 +124,7 @@ struct sensor_value {
 			s16 cal_z;
 			u8 accuracy;
 		} __attribute__((__packed__));
-		struct { /*uncalibrated mag, gyro*/
+		struct { /*uncalibrated accel, mag, gyro*/
 			s16 uncal_x;
 			s16 uncal_y;
 			s16 uncal_z;
@@ -262,7 +262,7 @@ struct sensor_spec_t {
 	uint8_t uid;
 	uint8_t name[15];
 	uint8_t vendor;
-	uint16_t version;
+	uint32_t version;
 	uint8_t is_wake_up;
 	int32_t min_delay;
 	uint32_t max_delay;
@@ -361,6 +361,7 @@ struct ssp_data {
 	int accel_position;
 	int accel_motor_coef;
 	struct calibraion_data accelcal;
+	u8 orientation_mode;
 #endif
 #ifdef CONFIG_SENSORS_SSP_GYROSCOPE
 	struct  gyroscope_sensor_operations *gyro_ops;

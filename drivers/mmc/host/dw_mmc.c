@@ -3730,7 +3730,9 @@ static irqreturn_t dw_mci_detect_interrupt(int irq, void *dev_id)
 	struct mmc_host *mmc = host->slot->mmc;
 
 	/* sdcard power off */
-	queue_work(host->sd_card_det_workqueue, &host->card_det_work);
+	if (host->quirks & DW_MCI_QUIRK_CD_PWR_OFF)
+		queue_work(host->sd_card_det_workqueue, &host->card_det_work);
+
 	if (host->card_detect_cnt < 0x7FFFFFF0)
 		host->card_detect_cnt++;
 
@@ -4522,7 +4524,8 @@ static struct dw_mci_of_quirks {
 	.quirk = "disable-wp",.id = DW_MCI_QUIRK_NO_WRITE_PROTECT,}, {
 	.quirk = "fixed_voltage",.id = DW_MMC_QUIRK_FIXED_VOLTAGE,}, {
 	.quirk = "card-init-hwacg-ctrl",.id = DW_MCI_QUIRK_HWACG_CTRL,}, {
-.quirk = "enable-ulp-mode",.id = DW_MCI_QUIRK_ENABLE_ULP,},};
+	.quirk = "enable-ulp-mode",.id = DW_MCI_QUIRK_ENABLE_ULP,}, {
+	.quirk = "card-detect-pwr-off",.id = DW_MCI_QUIRK_CD_PWR_OFF,},};
 
 static struct dw_mci_board *dw_mci_parse_dt(struct dw_mci *host)
 {
@@ -4885,13 +4888,15 @@ int dw_mci_probe(struct dw_mci *host, struct platform_device *pdev)
 	}
 	INIT_WORK(&host->card_work, dw_mci_work_routine_card);
 
-	/* For SD card power control */
-	host->sd_card_det_workqueue = alloc_workqueue("sd-card-det-wq", WQ_MEM_RECLAIM | WQ_UNBOUND | WQ_HIGHPRI, 1);
-	if (!host->sd_card_det_workqueue) {
-		ret = -ENOMEM;
-		goto err_dmaunmap;
+	if (host->quirks & DW_MCI_QUIRK_CD_PWR_OFF) {
+		/* For SD card power control */
+		host->sd_card_det_workqueue = alloc_workqueue("sd-card-det-wq", WQ_MEM_RECLAIM | WQ_UNBOUND | WQ_HIGHPRI, 1);
+		if (!host->sd_card_det_workqueue) {
+			ret = -ENOMEM;
+			goto err_dmaunmap;
+		}
+		INIT_WORK(&host->card_det_work, dw_mci_sd_power_off);
 	}
-	INIT_WORK(&host->card_det_work, dw_mci_sd_power_off);
 
 	/* INT min lock */
 	pm_workqueue = create_freezable_workqueue("dw_mci_clk_ctrl");
@@ -4966,9 +4971,10 @@ int dw_mci_probe(struct dw_mci *host, struct platform_device *pdev)
 
 err_workqueue:
 	destroy_workqueue(host->card_workqueue);
-	destroy_workqueue(host->sd_card_det_workqueue);
 	destroy_workqueue(pm_workqueue);
 	pm_qos_remove_request(&host->pm_qos_lock);
+	if (host->quirks & DW_MCI_QUIRK_CD_PWR_OFF)
+		destroy_workqueue(host->sd_card_det_workqueue);
 
 err_dmaunmap:
 	if (host->use_dma && host->dma_ops->exit)
@@ -5015,9 +5021,11 @@ void dw_mci_remove(struct dw_mci *host)
 
 	del_timer_sync(&host->sto_timer);
 	destroy_workqueue(host->card_workqueue);
-	destroy_workqueue(host->sd_card_det_workqueue);
 	destroy_workqueue(pm_workqueue);
 	pm_qos_remove_request(&host->pm_qos_lock);
+
+	if (host->quirks & DW_MCI_QUIRK_CD_PWR_OFF)
+		destroy_workqueue(host->sd_card_det_workqueue);
 
 	if (host->pdata->quirks & DW_MCI_QUIRK_USE_SSC) {
 		if (drv_data && drv_data->ssclk_control)

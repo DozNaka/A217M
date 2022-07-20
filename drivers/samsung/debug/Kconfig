@@ -54,7 +54,7 @@ config SEC_DEBUG_LAST_KMSG
 config SEC_DEBUG_FIRST2M_LOG
 	bool "support storing of initial 2M kernel log"
 	depends on SEC_DEBUG
-	default y
+	default n
 	help
 	  This option enables hooking of initial 2M kernel log.
  	  It can be used for debugging purpose in case of booting failure or something else.
@@ -62,7 +62,7 @@ config SEC_DEBUG_FIRST2M_LOG
 config SEC_DEBUG_INIT_LOG
 	bool "support hooking of init task log"
 	depends on SEC_DEBUG
-	default y
+	default n
 	help
 	  This option enables hooking of init task log.
 	  It can be used for debugging purpose in case of booting failure or something else.

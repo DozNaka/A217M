@@ -168,6 +168,7 @@ static void print_sensordata(struct ssp_data *data, unsigned int sensor_type)
 				 data->delay[sensor_type].sampling_period,
 				 data->delay[sensor_type].max_report_latency);
 			break;
+		case SENSOR_TYPE_ACCELEROMETER_UNCALIBRATED:
 		case SENSOR_TYPE_MAGNETIC_FIELD_UNCALIBRATED:
 		case SENSOR_TYPE_GYROSCOPE_UNCALIBRATED:
 			ssp_info("%s(%u) : %d, %d, %d, %d, %d, %d (%lld) (%ums, %dms)",

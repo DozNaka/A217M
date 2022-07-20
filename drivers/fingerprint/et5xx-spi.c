@@ -39,7 +39,6 @@ static DEFINE_MUTEX(device_list_lock);
 
 struct debug_logger *g_logger;
 static DECLARE_WAIT_QUEUE_HEAD(interrupt_waitq);
-static unsigned int bufsiz = 1024;
 
 static irqreturn_t et5xx_fingerprint_interrupt(int irq, void *dev_id)
 {
@@ -381,15 +380,6 @@ static long et5xx_ioctl(struct file *filp, unsigned int cmd, unsigned long arg)
 			pr_err("FP_REGISTER_WRITE error retval = %d\n", retval);
 		}
 		break;
-	case FP_REGISTER_MREAD:
-		address = ioc->tx_buf;
-		result = ioc->rx_buf;
-		pr_debug("FP_REGISTER_MREAD\n");
-		retval = et5xx_io_read_registerex(etspi, address, result, ioc->len);
-		if (retval < 0) {
-			pr_err("FP_REGISTER_MREAD error retval = %d\n", retval);
-		}
-		break;
 	case FP_REGISTER_BREAD:
 		pr_debug("FP_REGISTER_BREAD\n");
 		retval = et5xx_io_burst_read_register(etspi, ioc);
@@ -436,19 +426,6 @@ static long et5xx_ioctl(struct file *filp, unsigned int cmd, unsigned long arg)
 		retval = et5xx_io_nvm_write(etspi, ioc);
 		if (retval < 0) {
 			pr_err("FP_NVM_WRITE error retval = %d\n", retval);
-		}
-		retval = et5xx_io_nvm_off(etspi, ioc);
-		if (retval < 0) {
-			pr_err("FP_NVM_OFF error retval = %d\n", retval);
-		} else {
-			pr_debug("FP_NVM_OFF\n");
-		}
-		break;
-	case FP_NVM_WRITEEX:
-		pr_debug("FP_NVM_WRITEEX, (%d)\n", etspi->clk_setting->spi_speed);
-		retval = et5xx_io_nvm_writeex(etspi, ioc);
-		if (retval < 0) {
-			pr_err("FP_NVM_WRITEEX error retval = %d\n", retval);
 		}
 		retval = et5xx_io_nvm_off(etspi, ioc);
 		if (retval < 0) {
@@ -723,7 +700,7 @@ int et5xx_platformInit(struct et5xx_data *etspi)
 		goto et5xx_platformInit_default_failed;
 	}
 
-#if KERNEL_VERSION(5, 4, 0) > LINUX_VERSION_CODE
+#if KERNEL_VERSION(4, 19, 188) > LINUX_VERSION_CODE
 	/* 4.19 R */
 	wakeup_source_init(etspi->fp_signal_lock, "et5xx_sigwake_lock");
 	/* 4.19 Q */

@@ -477,6 +477,10 @@ static int dwc3_core_soft_reset(struct dwc3 *dwc)
 
 	usb_phy_init(dwc->usb2_phy);
 	usb_phy_init(dwc->usb3_phy);
+
+	dev_info(dwc->dev, "%s: init_count:%d, power_count:%d\n", __func__,
+			dwc->usb2_generic_phy->init_count, dwc->usb2_generic_phy->power_count);
+
 	ret = phy_init(dwc->usb2_generic_phy);
 	if (ret < 0)
 		goto err_usb2phy_power;

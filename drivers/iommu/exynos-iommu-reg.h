@@ -698,6 +698,19 @@ static inline u32 __sysmmu_get_intr_status(struct sysmmu_drvdata *drvdata,
 		return readl_relaxed(drvdata->sfrbase + REG_INT_STATUS);
 }
 
+static inline u32 __sysmmu_get_intr_axid(struct sysmmu_drvdata *drvdata,
+					 bool is_secure)
+{
+	u32 val;
+
+	if (is_secure)
+		val = __secure_info_read(MMU_SEC_REG(drvdata, IDX_FAULT_TRANS_INFO));
+	else
+		val = readl_relaxed(MMU_REG(drvdata, IDX_FAULT_TRANS_INFO));
+
+	return val & 0xFFFF;
+}
+
 static inline u32 __sysmmu_get_fault_address(struct sysmmu_drvdata *drvdata,
 					bool is_secure, unsigned long vmid)
 {

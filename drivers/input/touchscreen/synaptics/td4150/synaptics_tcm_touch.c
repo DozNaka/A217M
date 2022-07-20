@@ -1313,7 +1313,9 @@ int touch_suspend(struct syna_tcm_hcd *tcm_hcd)
 
 int touch_resume(struct syna_tcm_hcd *tcm_hcd)
 {
-
+#ifdef CONFIG_SEC_FACTORY
+	int retval;
+#endif
 	if (!touch_hcd)
 		return 0;
 

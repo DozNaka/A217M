@@ -86,6 +86,7 @@
 						10 { pname = "rcam_af_vdd"; 	pin = <PIN_REGULATOR 1 0>;				}; /* RCAM1_AFVDD_2P8 */
 						20 { pname = "gm2_iovdd"; 	pin = <PIN_REGULATOR 1 1000>;				}; /* CAM_VDDIO_1P8 */
 						30 { pname = I2C_ON; 		pin = <PIN_I2C 1 500>; 					};
+						40 { pname = DELAY;			pin = <PIN_NONE 0 500>;								};
 					};
 
 					scenario_read_rom_off {
@@ -97,6 +98,7 @@
 						10 { pname = I2C_OFF; 		pin = <PIN_I2C 0 500>; 					};
 						20 { pname = "gm2_iovdd"; 	pin = <PIN_REGULATOR 0 0>;				}; /* CAM_VDDIO_1P8 */
 						30 { pname = "rcam_af_vdd"; 	pin = <PIN_REGULATOR 0 0>;				}; /* RCAM1_AFVDD_2P8 */
+						40 { pname = DELAY;			pin = <PIN_NONE 0 40000>;							};
 					};
 				};
 			};

@@ -26,6 +26,10 @@
 #define __MUIC_H__
 
 #define MUIC_CORE "MUIC_CORE"
+
+#define SIOP (1 << 0)
+#define FLED (1 << 1)
+
 /* Status of IF PMIC chip (suspend and resume) */
 enum {
 	MUIC_SUSPEND		= 0,
@@ -213,9 +217,12 @@ typedef enum {
 	ATTACHED_DEV_POGO_DOCK_5V_MUIC,
 	ATTACHED_DEV_POGO_DOCK_9V_MUIC,
 	ATTACHED_DEV_ABNORMAL_OTG_MUIC,
+	ATTACHED_DEV_RETRY_TIMEOUT_OPEN_MUIC,
+	ATTACHED_DEV_RETRY_AFC_CHARGER_5V_MUIC,
+	ATTACHED_DEV_RETRY_AFC_CHARGER_9V_MUIC,
 	ATTACHED_DEV_UNKNOWN_MUIC,
 
-	ATTACHED_DEV_NUM = 81,
+	ATTACHED_DEV_NUM,
 } muic_attached_dev_t;
 
 #ifdef CONFIG_MUIC_HV_FORCE_LIMIT
@@ -288,7 +295,7 @@ struct muic_platform_data {
 	int silent_chg_change_state;
 #endif
 
-#ifdef CONFIG_MUIC_SYSFS
+#if IS_ENABLED(CONFIG_MUIC_SYSFS)
 	struct device *switch_device;
 	struct mutex sysfs_mutex;
 #endif
@@ -330,6 +337,12 @@ struct muic_platform_data {
 
 	/* muic cable data collecting function */
 	void (*init_cable_data_collect_cb)(void);
+
+	/* muic check charger init function */
+	int (*muic_hv_charger_init_cb)(void);
+
+	/* muic set hiccup mode function */
+	int (*muic_set_hiccup_mode_cb)(int on_off);
 };
 
 #define MUIC_PDATA_VOID_FUNC(func, param) \
@@ -536,21 +549,33 @@ typedef enum tx_data{
 		muic_pdic_notifier_detach_attached_dev(dev)
 #endif
 
+#if IS_ENABLED(CONFIG_MUIC_NOTIFIER)
+extern int muic_set_hiccup_mode(int on_off);
+extern int muic_hv_charger_init(void);
+#else
+static inline int muic_hv_charger_init(void) {return 0; }
+#endif
+
 int get_switch_sel(void);
 int get_afc_mode(void);
 void muic_set_hmt_status(int status);
 int muic_core_handle_attach(struct muic_platform_data *muic_pdata,
 			muic_attached_dev_t new_dev, int adc, u8 vbvolt);
 int muic_core_handle_detach(struct muic_platform_data *muic_pdata);
-bool muic_core_get_pdic_cable_state(struct muic_platform_data *muic_pdata);
-struct muic_platform_data *muic_core_init(void *drv_data);
-void muic_core_exit(struct muic_platform_data *muic_pdata);
+extern bool muic_core_get_pdic_cable_state(struct muic_platform_data *muic_pdata);
+extern struct muic_platform_data *muic_core_init(void *drv_data);
+extern void muic_core_exit(struct muic_platform_data *muic_pdata);
 extern void muic_disable_otg_detect(void);
 #if defined(CONFIG_MUIC_HV)
 int muic_core_hv_state_manager(struct muic_platform_data *muic_pdata,
 		muic_hv_transaction_t trans);
 void muic_core_hv_init(struct muic_platform_data *muic_pdata);
 bool muic_core_hv_is_hv_dev(struct muic_platform_data *muic_pdata);
+#endif
+#if !defined(CONFIG_DISCRETE_CHARGER)
+extern int muic_afc_set_voltage(int voltage);
+extern int muic_afc_request_voltage(int cause, int voltage);
+extern int muic_afc_request_cause_clear(void);
 #endif
 #endif /* __MUIC_H__ */
 

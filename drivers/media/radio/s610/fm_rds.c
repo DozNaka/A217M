@@ -1239,9 +1239,8 @@ void fm_rds_write_data_pi(struct s610_radio *radio,
 		} else if (pi->rds_event & RDS_EVENT_PS_MASK) {
 			pi->rds_event &= ~RDS_EVENT_PS_MASK;
 			str_len = strlen(pi->ps_candidate);
-			if (str_len > 8)
-			str_len = 8;
-
+                        if (str_len > 8)
+                            str_len = 8;
 			buf_ptr[total_size] = RDS_EVENT_PS;
 			buf_ptr[total_size+1] = str_len;
 
@@ -1255,11 +1254,10 @@ void fm_rds_write_data_pi(struct s610_radio *radio,
 		} else if (pi->rds_event & RDS_EVENT_RT_MASK) {
 			pi->rds_event &= ~RDS_EVENT_RT_MASK;
 			str_len = strlen(pi->rt_candidate);
-			
+			if (str_len > 64)
+				str_len = 64;
 			buf_ptr[total_size] = RDS_EVENT_RT;
 			buf_ptr[total_size+1] = str_len;
-			if (str_len > 64)
-			str_len = 64;
 
 			for (i = 0; i < str_len; i++) {
 				buf_ptr[total_size + i + 2] = pi->rt_candidate[i];

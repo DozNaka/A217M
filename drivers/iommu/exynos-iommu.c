@@ -174,7 +174,8 @@ void exynos_sysmmu_tlb_invalidate(struct iommu_domain *iommu_domain,
 }
 
 static void sysmmu_get_interrupt_info(struct sysmmu_drvdata *data,
-			int *flags, unsigned long *addr, bool is_secure)
+				      int *flags, int *id, unsigned long *addr,
+				      bool is_secure)
 {
 	unsigned long itype, vmid;
 	u32 info;
@@ -191,13 +192,15 @@ static void sysmmu_get_interrupt_info(struct sysmmu_drvdata *data,
 	*flags = MMU_IS_READ_FAULT(info) ?
 		IOMMU_FAULT_READ : IOMMU_FAULT_WRITE;
 	*flags |= SYSMMU_FAULT_FLAG(itype);
+
+	*id = __sysmmu_get_intr_axid(data, is_secure);
 }
 
 irqreturn_t exynos_sysmmu_irq_secure(int irq, void *dev_id)
 {
 	struct sysmmu_drvdata *drvdata = dev_id;
 	unsigned long addr = -1;
-	int flags = 0;
+	int flags = 0, id = 0;
 
 	dev_err(drvdata->sysmmu, "Secure irq occured!\n");
 	if (!drvdata->securebase) {
@@ -208,9 +211,9 @@ irqreturn_t exynos_sysmmu_irq_secure(int irq, void *dev_id)
 				(unsigned long)drvdata->securebase);
 	}
 
-	sysmmu_get_interrupt_info(drvdata, &flags, &addr, true);
+	sysmmu_get_interrupt_info(drvdata, &flags, &id, &addr, true);
 	show_secure_fault_information(drvdata, flags, addr);
-	atomic_notifier_call_chain(&drvdata->fault_notifiers, addr, &flags);
+	atomic_notifier_call_chain(&drvdata->fault_notifiers, addr, &id);
 
 	BUG();
 
@@ -221,7 +224,7 @@ static irqreturn_t exynos_sysmmu_irq(int irq, void *dev_id)
 {
 	struct sysmmu_drvdata *drvdata = dev_id;
 	unsigned long addr = -1;
-	int flags = 0, ret;
+	int flags = 0, id = 0, ret;
 
 	dev_info(drvdata->sysmmu, "%s:%d: irq(%d) happened\n", __func__, __LINE__, irq);
 
@@ -229,11 +232,11 @@ static irqreturn_t exynos_sysmmu_irq(int irq, void *dev_id)
 		"Fault occurred while System MMU %s is not enabled!\n",
 		dev_name(drvdata->sysmmu));
 
-	sysmmu_get_interrupt_info(drvdata, &flags, &addr, false);
+	sysmmu_get_interrupt_info(drvdata, &flags, &id, &addr, false);
 	ret = show_fault_information(drvdata, flags, addr);
 	if (ret == -EAGAIN)
 		return IRQ_HANDLED;
-	atomic_notifier_call_chain(&drvdata->fault_notifiers, addr, &flags);
+	atomic_notifier_call_chain(&drvdata->fault_notifiers, addr, &id);
 
 	panic("Unrecoverable System MMU Fault!!");
 

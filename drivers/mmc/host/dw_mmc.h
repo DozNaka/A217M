@@ -326,6 +326,8 @@ struct dw_mci_dma_ops {
 #define DW_MCI_QUIRK_USE_SSC			BIT(8)
 /* Timer for broken data transfer over scheme */
 #define DW_MCI_QUIRK_BROKEN_DTO			BIT(9)
+/* card detect fast power off */
+#define DW_MCI_QUIRK_CD_PWR_OFF			BIT(10)
 
 /* Slot level quirks */
 /* This slot has no write protect */

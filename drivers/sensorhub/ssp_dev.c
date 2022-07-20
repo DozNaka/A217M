@@ -82,7 +82,7 @@ static void init_sensorlist(struct ssp_data *data)
 		SENSOR_INFO_UNKNOWN,
 		SENSOR_INFO_PICK_UP_GESTURE,
 		SENSOR_INFO_UNKNOWN,
-		SENSOR_INFO_UNKNOWN,
+		SENSOR_INFO_DEVICE_ORIENTATION,
 		SENSOR_INFO_UNKNOWN,
 		SENSOR_INFO_PROXIMITY_RAW,
 		SENSOR_INFO_GEOMAGNETIC_POWER,
@@ -96,7 +96,20 @@ static void init_sensorlist(struct ssp_data *data)
 		SENSOR_INFO_VDIS_GYRO,
 		SENSOR_INFO_POCKET_MODE_LITE,
 		SENSOR_INFO_PROXIMITY_CALIBRATION,
-		SENSOR_INFO_PROTOS_MOTION,
+		SENSOR_INFO_PROTOS_MOTION, // 14
+		SENSOR_INFO_UNKNOWN,
+		SENSOR_INFO_ACCELEROMETER_UNCALIBRATED,
+		SENSOR_INFO_UNKNOWN,
+		SENSOR_INFO_UNKNOWN,
+		SENSOR_INFO_UNKNOWN,
+		SENSOR_INFO_UNKNOWN,
+		SENSOR_INFO_UNKNOWN,
+		SENSOR_INFO_UNKNOWN,
+		SENSOR_INFO_UNKNOWN,
+		SENSOR_INFO_UNKNOWN,
+		SENSOR_INFO_DEVICE_ORIENTATION_WU,
+		SENSOR_INFO_UNKNOWN,
+		SENSOR_INFO_SAR_BACKOFF_MOTION,
 	};
 
 	memcpy(&data->info, sensorinfo, sizeof(data->info));
@@ -211,6 +224,7 @@ int sync_sensor_data(struct ssp_data *data)
 #endif
 #ifdef CONFIG_SENSORS_SSP_ACCELOMETER
 		set_accel_cal,
+		set_device_orientation_mode,
 #endif
 #ifdef CONFIG_SENSORS_SSP_LIGHT
 		set_light_coef,
@@ -439,7 +453,7 @@ static int ssp_parse_dt(struct device *dev, struct ssp_data *data)
 #if defined(CONFIG_SENSORS_SSP_PROXIMITY_AUTO_CAL_TMD3725)
 	/* prox thresh */
 	if (of_property_read_u8_array(np, "ssp-prox-thresh",
-				      data->prox_thresh, PROX_THRESH_SIZE))
+					  data->prox_thresh, PROX_THRESH_SIZE))
 		ssp_err("no prox-thresh, set as 0");
 
 	ssp_info("prox-thresh - %u, %u, %u, %u", data->prox_thresh[PROX_THRESH_HIGH],
@@ -448,7 +462,7 @@ static int ssp_parse_dt(struct device *dev, struct ssp_data *data)
 #else
 	/* prox thresh */
 	if (of_property_read_u16_array(np, "ssp-prox-thresh",
-				       data->prox_thresh, PROX_THRESH_SIZE))
+					   data->prox_thresh, PROX_THRESH_SIZE))
 		ssp_err("no prox-thresh, set as 0");
 
 	ssp_info("prox-thresh - %u, %u", data->prox_thresh[PROX_THRESH_HIGH],
@@ -458,7 +472,7 @@ static int ssp_parse_dt(struct device *dev, struct ssp_data *data)
 #if defined(CONFIG_SENSROS_SSP_PROXIMITY_THRESH_CAL)
 	/* prox thresh additional value */
 	if (of_property_read_u16_array(np, "ssp-prox-thresh-addval", data->prox_thresh_addval,
-				       ARRAY_SIZE(data->prox_thresh_addval)))
+					   ARRAY_SIZE(data->prox_thresh_addval)))
 		ssp_err("no prox-thresh_addval, set as 0");
 
 	ssp_info("prox-thresh-addval - %u, %u", data->prox_thresh_addval[PROX_THRESH_HIGH],
@@ -467,14 +481,14 @@ static int ssp_parse_dt(struct device *dev, struct ssp_data *data)
 
 #ifdef CONFIG_SENSORS_SSP_PROXIMITY_MODIFY_SETTINGS
 	if (of_property_read_u16_array(np, "ssp-prox-setting-thresh",
-				       data->prox_setting_thresh, 2))
+					   data->prox_setting_thresh, 2))
 		ssp_err("no prox-setting-thresh, set as 0");
 
 	ssp_info("prox-setting-thresh - %u, %u", data->prox_setting_thresh[0],
 		 data->prox_setting_thresh[1]);
 
 	if (of_property_read_u16_array(np, "ssp-prox-mode-thresh",
-				       data->prox_mode_thresh, PROX_THRESH_SIZE))
+					   data->prox_mode_thresh, PROX_THRESH_SIZE))
 		ssp_err("no prox-mode-thresh, set as 0");
 
 	ssp_info("prox-mode-thresh - %u, %u", data->prox_mode_thresh[PROX_THRESH_HIGH],
@@ -501,7 +515,7 @@ static int ssp_parse_dt(struct device *dev, struct ssp_data *data)
 
 #ifdef CONFIG_SENSORS_SSP_LIGHT
 	if (of_property_read_u32_array(np, "ssp-light-position",
-				       data->light_position, ARRAY_SIZE(data->light_position)))
+					   data->light_position, ARRAY_SIZE(data->light_position)))
 		ssp_err("no ssp-light-position, set as 0");
 
 
@@ -511,14 +525,14 @@ static int ssp_parse_dt(struct device *dev, struct ssp_data *data)
 		 data->light_position[4], data->light_position[5]);
 
 	if (of_property_read_u32_array(np, "ssp-light-cam-lux",
-				       data->camera_lux_hysteresis, ARRAY_SIZE(data->camera_lux_hysteresis))) {
+					   data->camera_lux_hysteresis, ARRAY_SIZE(data->camera_lux_hysteresis))) {
 		ssp_err("no ssp-light-cam-high");
 		data->camera_lux_hysteresis[0] = -1;
 		data->camera_lux_hysteresis[1] = 0;
 	}
 
 	if (of_property_read_u32_array(np, "ssp-light-cam-br",
-				       data->camera_br_hysteresis, ARRAY_SIZE(data->camera_br_hysteresis))) {
+					   data->camera_br_hysteresis, ARRAY_SIZE(data->camera_br_hysteresis))) {
 		ssp_err("no ssp-light-cam-low");
 		data->camera_br_hysteresis[0] = 10000;
 		data->camera_br_hysteresis[1] = 0;
@@ -532,7 +546,7 @@ static int ssp_parse_dt(struct device *dev, struct ssp_data *data)
 	} else {
 		data->brightness_array = kcalloc(data->brightness_array_len, sizeof(u32), GFP_KERNEL);
 		if (of_property_read_u32_array(np, "ssp-brightness-array",
-					       data->brightness_array, data->brightness_array_len)) {
+						   data->brightness_array, data->brightness_array_len)) {
 			ssp_err("no brightness array");
 			data->brightness_array_len = 0;
 			kfree(data->brightness_array);
@@ -546,7 +560,7 @@ static int ssp_parse_dt(struct device *dev, struct ssp_data *data)
 	/* mag matrix */
 #ifdef CONFIG_SENSORS_SSP_MAGNETIC_YAS539
 	if (of_property_read_u16_array(np, "ssp-mag-array",
-				       data->pdc_matrix, ARRAY_SIZE(data->pdc_matrix)))
+					   data->pdc_matrix, ARRAY_SIZE(data->pdc_matrix)))
 		ssp_err("no mag-array, set as 0");
 
 	/* check nfc/mst for mag matrix*/
@@ -565,18 +579,18 @@ static int ssp_parse_dt(struct device *dev, struct ssp_data *data)
 		if (value_mst == 1) {
 			ssp_info("mag matrix(%d %d) nfc/mst array", value_nfc, value_mst);
 			if (of_property_read_u16_array(np, "ssp-mag-mst-array",
-						       data->pdc_matrix, ARRAY_SIZE(data->pdc_matrix)))
+							   data->pdc_matrix, ARRAY_SIZE(data->pdc_matrix)))
 				ssp_err("no mag-mst-array");
 		} else if (value_nfc == 1) {
 			ssp_info("mag matrix(%d %d) nfc only array", value_nfc, value_mst);
 			if (of_property_read_u16_array(np, "ssp-mag-nfc-array",
-						       data->pdc_matrix, ARRAY_SIZE(data->pdc_matrix)))
+							   data->pdc_matrix, ARRAY_SIZE(data->pdc_matrix)))
 				ssp_err("no mag-nfc-array");
 		}
 	}
 #else
 	if (of_property_read_u8_array(np, "ssp-mag-array",
-				      data->pdc_matrix, ARRAY_SIZE(data->pdc_matrix)))
+					  data->pdc_matrix, ARRAY_SIZE(data->pdc_matrix)))
 		ssp_err("no mag-array, set as 0");
 
 	/* check nfc/mst for mag matrix*/
@@ -595,12 +609,12 @@ static int ssp_parse_dt(struct device *dev, struct ssp_data *data)
 		if (value_mst == 1) {
 			ssp_info("mag matrix(%d %d) nfc/mst array", value_nfc, value_mst);
 			if (of_property_read_u8_array(np, "ssp-mag-mst-array",
-						      data->pdc_matrix, ARRAY_SIZE(data->pdc_matrix)))
+							  data->pdc_matrix, ARRAY_SIZE(data->pdc_matrix)))
 				ssp_err("no mag-mst-array");
 		} else if (value_nfc == 1) {
 			ssp_info("mag matrix(%d %d) nfc only array", value_nfc, value_mst);
 			if (of_property_read_u8_array(np, "ssp-mag-nfc-array",
-						      data->pdc_matrix, ARRAY_SIZE(data->pdc_matrix)))
+							  data->pdc_matrix, ARRAY_SIZE(data->pdc_matrix)))
 				ssp_err("no mag-nfc-array");
 		}
 	}

@@ -721,8 +721,9 @@ static int mfc_dec_s_fmt_vid_out_mplane(struct file *file, void *priv,
 	/* sh_handle: HDR10+ HEVC SEI meta */
 	if (MFC_FEATURE_SUPPORT(dev, dev->pdata->hdr10_plus) &&
 			IS_HEVC_DEC(ctx)) {
-		dec->hdr10_plus_info = vmalloc(
-				(sizeof(struct hdr10_plus_meta) * MFC_MAX_BUFFERS));
+
+		dec->sh_handle_hdr.data_size = sizeof(struct hdr10_plus_meta) * MFC_MAX_BUFFERS;
+		dec->hdr10_plus_info = vmalloc(dec->sh_handle_hdr.data_size);
 		if (!dec->hdr10_plus_info)
 			mfc_err_ctx("[HDR+] failed to allocate HDR10+ information data\n");
 	}
@@ -1078,6 +1079,8 @@ static int __mfc_dec_ext_info(struct mfc_ctx *ctx)
 
 	val |= DEC_SET_DYNAMIC_DPB;
 	val |= DEC_SET_DRV_DPB_MANAGER;
+	val |= DEC_SET_OPERATING_FPS;
+	val |= DEC_SET_PRIORITY;
 
 	if (MFC_FEATURE_SUPPORT(dev, dev->pdata->skype))
 		val |= DEC_SET_SKYPE_FLAG;
@@ -1320,6 +1323,16 @@ static int mfc_dec_s_ctrl(struct file *file, void *priv,
 		break;
 	case V4L2_CID_MPEG_VIDEO_DECODING_ORDER:
 		dec->decoding_order = ctrl->value;
+		break;
+	case V4L2_CID_MPEG_MFC51_VIDEO_FRAME_RATE:
+		ctx->operating_framerate = ctrl->value;
+		mfc_update_real_time(ctx);
+		mfc_debug(2, "[QoS] user set the operating frame rate: %d\n", ctrl->value);
+		break;
+	case V4L2_CID_MPEG_VIDEO_PRIORITY:
+		ctx->prio = ctrl->value;
+		mfc_update_real_time(ctx);
+		mfc_debug(2, "[PRIO] user set priority: %d\n", ctrl->value);
 		break;
 	default:
 		list_for_each_entry(ctx_ctrl, &ctx->ctrls, list) {

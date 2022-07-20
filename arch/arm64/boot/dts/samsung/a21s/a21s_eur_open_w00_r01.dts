@@ -606,13 +606,14 @@
 				wtsr_timer_val = <0x03>;
 				smpl_timer_val = <0x00>;
 				check_jigon = <0x00>;
+				pmic_loop_bw;
 				init_time,sec = <0x00>;
 				init_time,min = <0x00>;
 				init_time,hour = <0x0c>;
 				init_time,mday = <0x01>;
 				init_time,mon = <0x00>;
-				init_time,year = <0x78>;
-				init_time,wday = <0x03>;
+				init_time,year = <0x79>;
+				init_time,wday = <0x05>;
 
 				s2mpu12-keys {
 
@@ -3287,7 +3288,6 @@
 			bypass-for-allpass;
 			use-fine-tuning;
 			card-init-hwacg-ctrl;
-			skip-init-mmc-scan;
 			use-runtime-pm;
 			fifo-depth = <0x40>;
 			desc-size = <0x04>;
@@ -4223,6 +4223,11 @@
 							pname = "on_i2c";
 							pin = <0x06 0x01 0x1f4>;
 						};
+
+						40 {
+							pname = "delay";
+							pin = <0x00 0x00 0x1f4>;
+						};
 					};
 
 					scenario_read_rom_off {
@@ -4242,6 +4247,11 @@
 						30 {
 							pname = "rcam_af_vdd";
 							pin = <0x05 0x00 0x00>;
+						};
+
+						40 {
+							pname = "delay";
+							pin = <0x00 0x00 0x9c40>;
 						};
 					};
 				};
